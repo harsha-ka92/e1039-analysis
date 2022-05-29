@@ -13,6 +13,9 @@ int run(const int nEvents = 1)
   const double KMAGSTR = -0.951;
   const bool cosmic = true;
 
+  const char* fn_list_dst="list_dst.txt";
+  const int   n_dst_ana=0;
+
   recoConsts* rc = recoConsts::instance();
   rc->set_DoubleFlag("FMAGSTR", FMAGSTR);
   rc->set_DoubleFlag("KMAGSTR", KMAGSTR);
@@ -33,34 +36,39 @@ int run(const int nEvents = 1)
 
   AnaModule* ana = new AnaModule();
   ana->set_output_filename("ana.root");
-  ana->registerDetector("DP1TL");     //register detector by its name, all detectors that do not directly partipate the tracking can be used
-  ana->registerDetector("DP1TR");
-  ana->registerDetector("DP1BL");
-  ana->registerDetector("DP1BR");
-  ana->registerDetector("DP2TL");
-  ana->registerDetector("DP2TR");
-  ana->registerDetector("DP2BL");
-  ana->registerDetector("DP2BR");
-  ana->registerDetector("P1X1");
-  ana->registerDetector("P1X2");
-  ana->registerDetector("P2X1");
-  ana->registerDetector("P2X2");
-  ana->registerDetector("P1Y1");
-  ana->registerDetector("P1Y2");
-  ana->registerDetector("P2Y1");
-  ana->registerDetector("P2Y2");
+  ana->registerDetector("H4Y1R");     //register detector by its name, all detectors that do not directly partipate the tracking can be used
+  //ana->registerDetector("H4Y1L");
+  ana->registerDetector("H4Y2R");
+  ana->registerDetector("H4B");
   se->registerSubsystem(ana);
+
+  vector<string> list_dst;
+  string fn_dst;
+  ifstream ifs(fn_list_dst);
+  while (ifs >> fn_dst) list_dst.push_back(fn_dst);
+  ifs.close();
 
   Fun4AllInputManager* in = new Fun4AllDstInputManager("DSTIN");
   in->Verbosity(0);
-  in->fileopen("data.root");
+  //in->fileopen("data.root");
   se->registerInputManager(in);
+
+  int n_dst = list_dst.size();
+  cout << "N of DSTs: all = " << n_dst;
+  if (n_dst_ana > 0 && n_dst > n_dst_ana) n_dst = n_dst_ana;
+  cout << ", to be analyzed = " << n_dst << endl;
+  for (int i_dst = 0; i_dst < n_dst; i_dst++) {
+    string fn_dst = list_dst[i_dst];
+    cout << "DST: " << i_dst << "/" << n_dst << ": " << fn_dst << endl;
+    in->fileopen(fn_dst);
+    se->run();
+  }
 
   //we do not really need an output manager
   //Fun4AllDstOutputManager* out = new Fun4AllDstOutputManager("DSTOUT", "result.root");
   //se->registerOutputManager(out);
 
-  se->run(nEvents);
+  //se->run(nEvents);
 
   // finish job - close and save output files
   se->End();
