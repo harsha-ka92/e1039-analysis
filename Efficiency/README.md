@@ -17,3 +17,7 @@ After that, run `root -l -b -q run.C\(-1\)` to run the analysis over the input D
 ## Understanding the content of the output
 The output `ana.root` file is a plain ROOT ntuple file named `save` with 8 branches, user could modify the content of `AnaModule` to add more information. The ntuple is filled once per track per detector, thus it will contain multiple entries for the same event. The branches that are currently available are:
 ![](pic.png)
+
+## Efficiency Plots
+
+Efficincy plots can be created using the scripts in `work` directory. `debug` and `efficiency` notebooks can be used to generate all the plots.
