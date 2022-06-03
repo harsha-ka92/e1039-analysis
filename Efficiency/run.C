@@ -37,9 +37,21 @@ int run(const int nEvents = 1)
   AnaModule* ana = new AnaModule();
   ana->set_output_filename("ana.root");
   ana->registerDetector("H4Y1R");     //register detector by its name, all detectors that do not directly partipate the tracking can be used
-  //ana->registerDetector("H4Y1L");
+  ana->registerDetector("H4Y1L");
   ana->registerDetector("H4Y2R");
+  ana->registerDetector("H4Y2L");
+  ana->registerDetector("H4T");
   ana->registerDetector("H4B");
+  ana->registerDetector("H1B");
+  ana->registerDetector("H1T");
+  ana->registerDetector("H1L");
+  ana->registerDetector("H1R");
+  ana->registerDetector("H2B");
+  ana->registerDetector("H2T");
+  ana->registerDetector("H2L");
+  ana->registerDetector("H2R");
+  ana->registerDetector("H3B");
+  ana->registerDetector("H3T");
   se->registerSubsystem(ana);
 
   vector<string> list_dst;
