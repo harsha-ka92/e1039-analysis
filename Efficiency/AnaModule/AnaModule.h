@@ -6,6 +6,7 @@
 #include <fun4all/SubsysReco.h>
 #include <TString.h>
 #include <TVector3.h>
+#include <interface_main/SQEvent.h>
 #include <ktracker/SRecEvent.h>
 #include <ktracker/FastTracklet.h>
 #include <geom_svc/GeomSvc.h>
@@ -44,6 +45,7 @@ private:
   // Input
   SQHitVector*    hitVector;
   TrackletVector* trackletVec;
+  SQEvent* event;
 
   // Output
   TString saveName;
@@ -58,6 +60,29 @@ private:
   double y_exp;
   int nHits;
   double chisq;
+
+  // event info.
+  std::vector<int> vec_detID;
+  std::vector<int> vec_closeID;
+  std::vector<int> vec_expID;
+  std::vector<double> vec_xexp;
+  std::vector<double> vec_yexp;
+
+  // trigger info.
+  int nim1;
+  int nim2;
+  int nim3;
+  int nim4;
+  int fpga5;
+  // hodo masking
+  int mask_h1x;
+  int mask_h1y;
+  int mask_h2x;
+  int mask_h2y;
+  int mask_h3x;
+  int mask_h4x;
+  int mask_h4y1;
+  int mask_h4y2;
 };
 
 #endif

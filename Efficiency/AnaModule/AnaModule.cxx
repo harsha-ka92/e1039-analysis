@@ -4,6 +4,7 @@
 
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <phool/getClass.h>
+#include <interface_main/SQEvent.h>
 #include <interface_main/SQHitVector_v1.h>
 #include <interface_main/SQTrackVector_v1.h>
 #include <interface_main/SQDimuonVector_v1.h>
@@ -34,17 +35,34 @@ int AnaModule::InitRun(PHCompositeNode* topNode)
 
 int AnaModule::process_event(PHCompositeNode* topNode)
 {
+  //
+  // trigger info.
+  //
+  nim1 = event->get_trigger(SQEvent::NIM1);
+  nim2 = event->get_trigger(SQEvent::NIM2);
+  nim3 = event->get_trigger(SQEvent::NIM3);
+  nim4 = event->get_trigger(SQEvent::NIM4);
+  fpga5 = event->get_trigger(SQEvent::MATRIX5);
+
   int nTracklets = trackletVec->size();
   for(int i = 0; i < nTracklets; ++i)
   {
+    //if(nTracklets < 0) continue;
     Tracklet* tracklet = trackletVec->at(i);
     nHits = tracklet->getNHits();
     chisq = tracklet->getChisq();
 
     //very loose cuts here
-    if(nHits < 9) continue;
-    if(chisq > 20.) continue;
+    if(nHits < 10) continue;
+    if(chisq > 10.) continue;
 
+    
+    /*std::vector<int> vec_detID;
+    std::vector<int> vec_closeID;
+    std::vector<int> vec_expID;
+    std::vector<double> vec_xexp;
+    std::vector<double> vec_yexp;*/
+   
     for(auto it = detectorIDs.begin(); it != detectorIDs.end(); ++it)
     {
       detectorID = *it;
@@ -59,9 +77,42 @@ int AnaModule::process_event(PHCompositeNode* topNode)
       SQHit* hit = findHit(detectorID, elementID_exp);
       elementID_closest = hit == nullptr ? -1 : hit->get_element_id();
 
-      saveTree->Fill();
+	  vec_detID.push_back(detectorID);
+	  vec_expID.push_back(elementID_exp);
+	  vec_closeID.push_back(elementID_closest);
+      vec_xexp.push_back(x_exp);
+      vec_yexp.push_back(y_exp);
+
+      //saveTree->Fill();
     }
+
+    //
+    // masking condition for hodoscopes
+    //
+	for(int i = 0; i < vec_detID.size(); ++i)
+	{
+      if((vec_detID.at(i) == 31 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 32 && vec_expID.at(i) > 0)) mask_h1x = 1;
+	  if((vec_detID.at(i) == 33 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 34 && vec_expID.at(i) > 0)) mask_h1y = 1;
+      if((vec_detID.at(i) == 37 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 38 && vec_expID.at(i) > 0)) mask_h2x = 1;
+      if((vec_detID.at(i) == 35 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 36 && vec_expID.at(i) > 0)) mask_h2y = 1;
+      if((vec_detID.at(i) == 39 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 40 && vec_expID.at(i) > 0)) mask_h3x = 1;
+      if((vec_detID.at(i) == 45 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 46 && vec_expID.at(i) > 0)) mask_h4x = 1;
+      if((vec_detID.at(i) == 41 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 42 && vec_expID.at(i) > 0)) mask_h4y1 = 1;
+      if((vec_detID.at(i) == 43 && vec_expID.at(i) > 0)||(vec_detID.at(i) == 44 && vec_expID.at(i) > 0)) mask_h4y2 = 1;
+	}
+
   }
+
+  saveTree->Fill();
+ 
+  std::cout << "eventID : "<< eventID << " nTracklets : "<< nTracklets << " N detoctors : " << vec_detID.size() << std::endl;
+
+  
+  vec_detID.clear();
+  vec_closeID.clear();
+  vec_expID.clear();
+  vec_xexp.clear();
+  vec_yexp.clear();
 
   ++eventID;
   return Fun4AllReturnCodes::EVENT_OK;
@@ -78,9 +129,10 @@ int AnaModule::End(PHCompositeNode* topNode)
 
 int AnaModule::GetNodes(PHCompositeNode* topNode)
 {
+  event = findNode::getClass<SQEvent>(topNode, "SQEvent");
   hitVector   = findNode::getClass<SQHitVector>(topNode, "SQHitVector");
   trackletVec = findNode::getClass<TrackletVector>(topNode, "TrackletVector");
-  if(!hitVector || !trackletVec)
+  if(!event || !hitVector || !trackletVec)
   {
     return Fun4AllReturnCodes::ABORTRUN;
   }
@@ -94,18 +146,34 @@ void AnaModule::MakeTree()
 
   saveTree = new TTree("save", "Efficiency tree Created by AnaModule");
   saveTree->Branch("eventID", &eventID, "eventID/I");
-  saveTree->Branch("detectorID", &detectorID, "detectorID/I");
-  saveTree->Branch("elementID_exp", &elementID_exp, "elementID_exp/I");
-  saveTree->Branch("elementID_closest", &elementID_closest, "elementID_closest/I");
-  saveTree->Branch("x_exp", &x_exp, "x_exp/D");
-  saveTree->Branch("y_exp", &y_exp, "y_exp/D");
+  saveTree->Branch("detectorID", &vec_detID);
+  saveTree->Branch("elementID_exp", &vec_expID);
+  saveTree->Branch("elementID_closest", &vec_closeID);
+  saveTree->Branch("x_exp", &vec_xexp);
+  saveTree->Branch("y_exp", &vec_yexp);
   saveTree->Branch("nHits", &nHits, "nHits/I");
   saveTree->Branch("chisq", &chisq, "chisq/D");
+  // trigger info
+  saveTree->Branch("nim1", &nim1, "nim1/I");
+  saveTree->Branch("nim2", &nim2, "nim2/I");
+  saveTree->Branch("nim3", &nim3, "nim3/I");// only used in noice study
+  saveTree->Branch("nim4", &nim4, "nim4/I");
+  saveTree->Branch("fpga5", &fpga5, "fpga5/I");
+  // hodo mask
+  saveTree->Branch("mask_h1x", &mask_h1x, "mask_h1x/I");
+  saveTree->Branch("mask_h1y", &mask_h1y, "mask_h1y/I");
+  saveTree->Branch("mask_h2x", &mask_h2x, "mask_h2x/I");
+  saveTree->Branch("mask_h2y", &mask_h2y, "mask_h2y/I");
+  saveTree->Branch("mask_h3x", &mask_h3x, "mask_h3x/I");
+  saveTree->Branch("mask_h4x", &mask_h3x, "mask_h4x/I");
+  saveTree->Branch("mask_h4y1", &mask_h4y1, "mask_h4y1/I");
+  saveTree->Branch("mask_h4y2", &mask_h4y2, "mask_h4y2/I");
 }
 
 void AnaModule::registerDetector(TString name)
 {
   detectorIDs.insert(p_geomSvc->getDetectorID(name.Data()));
+  std::cout << name.Data() << " " << p_geomSvc->getDetectorID(name.Data()) << std::endl;
 }
 
 SQHit* AnaModule::findHit(int detID, int eleID)
