@@ -20,4 +20,9 @@ The output `ana.root` file is a plain ROOT ntuple file named `save` with 8 branc
 ![](pic.png)
 
 ## Efficiency Plots
+<<<<<<< HEAD
 Efficincy plots can be created using the scripts in `work` directory. `debug` and `efficiency` notebooks can be used to generate all the plots.
+=======
+
+Efficincy plots can be created using the scripts in `work` directory. `debug` and `efficiency` notebooks can     be used to generate all the plots.
+>>>>>>> 3aae19e8ebf38cfd23c9cf2d14652f0034cd57b0
