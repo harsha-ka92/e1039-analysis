@@ -15,10 +15,5 @@ To build the analysis module, run `source setup.sh` after the correct E1039 offl
 After that, run `root -l -b -q run.C\(-1\)` to run the analysis over the input DST file `data.root`. Currently all the dark photon detectors and prop. tube detectors are included. User could add more detectors by its detector name after line 51 in `run.C`. The output file name is currently hardcoded to be `ana.root` at line 35 in `run.C`. If successful, the marco should exit with `ana.root` generated at the same directory.
 
 ## Understanding the content of the output
-The output `ana.root` file is a plain ROOT ntuple file named `save` with 8 branches, user could modify the content of `AnaModule` to add more information. The ntuple is filled once per track per detector, thus it will contain multiple entries for the same event. The 8 branches that are currently available are:
-- `eventID`: the incrementing event ID
-- `nHits`: number of hits on this track
-- `chisq`: the chi squared of this track
-- `detectorID`: the ID of the detector of interest, the mapping between detector ID and their names can be found in `$E1039_CORE/packages/geom_svc/GeomSvc.cxx`
-- `elementID_exp`: the expected elementID by projecting the track to the detector
-- `elementID_closest`: the element that is fired and closest to the expected element on this detector.
+The output `ana.root` file is a plain ROOT ntuple file named `save` with 8 branches, user could modify the content of `AnaModule` to add more information. The ntuple is filled once per track per detector, thus it will contain multiple entries for the same event. The branches that are currently available are:
+![](pic.png)
