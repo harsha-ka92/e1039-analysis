@@ -43,6 +43,7 @@ private:
   GeomSvc* p_geomSvc;
 
   // Input
+  SQEvent* event;
   SQHitVector*    hitVector;
   TrackletVector* trackletVec;
 
