@@ -6,6 +6,9 @@
 #include <fun4all/SubsysReco.h>
 #include <TString.h>
 #include <TVector3.h>
+#include <interface_main/SQEvent.h>
+#include <TGraphErrors.h>
+#include <TF1.h>
 #include <ktracker/SRecEvent.h>
 #include <ktracker/FastTracklet.h>
 #include <geom_svc/GeomSvc.h>
