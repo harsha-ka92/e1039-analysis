@@ -45,22 +45,13 @@ int AnaModule::process_event(PHCompositeNode* topNode)
     if(nHits < 9) continue;
     if(chisq > 20.) continue;
 
-    for(auto it = detectorIDs.begin(); it != detectorIDs.end(); ++it)
-    {
-      detectorID = *it;
-      double z_exp = p_geomSvc->getPlanePosition(detectorID);
-      x_exp = tracklet->getExpPositionX(z_exp);
-      y_exp = tracklet->getExpPositionY(z_exp);
-      if(!p_geomSvc->isInPlane(detectorID, x_exp, y_exp)) continue;
+    effi_h4();
 
-      elementID_exp = p_geomSvc->getExpElementID(detectorID, tracklet->getExpPositionW(detectorID));
-      if(elementID_exp < 1 || elementID_exp > p_geomSvc->getPlaneNElements(detectorID)) continue;
+    saveTree->Fill();
 
-      SQHit* hit = findHit(detectorID, elementID_exp);
-      elementID_closest = hit == nullptr ? -1 : hit->get_element_id();
-
-      saveTree->Fill();
-    }
+    detectorID.clear();
+    elementID_exp.clear();
+    elementID_closest.clear();
   }
 
   ++eventID;
@@ -78,9 +69,10 @@ int AnaModule::End(PHCompositeNode* topNode)
 
 int AnaModule::GetNodes(PHCompositeNode* topNode)
 {
+  event = findNode::getClass<SQEvent>(topNode, "SQEvent");
   hitVector   = findNode::getClass<SQHitVector>(topNode, "SQHitVector");
   trackletVec = findNode::getClass<TrackletVector>(topNode, "TrackletVector");
-  if(!hitVector || !trackletVec)
+  if(!event || !hitVector || !trackletVec)
   {
     return Fun4AllReturnCodes::ABORTRUN;
   }
@@ -94,18 +86,11 @@ void AnaModule::MakeTree()
 
   saveTree = new TTree("save", "Efficiency tree Created by AnaModule");
   saveTree->Branch("eventID", &eventID, "eventID/I");
-  saveTree->Branch("detectorID", &detectorID, "detectorID/I");
-  saveTree->Branch("elementID_exp", &elementID_exp, "elementID_exp/I");
-  saveTree->Branch("elementID_closest", &elementID_closest, "elementID_closest/I");
-  saveTree->Branch("x_exp", &x_exp, "x_exp/D");
-  saveTree->Branch("y_exp", &y_exp, "y_exp/D");
+  saveTree->Branch("detectorID", &detectorID);
+  saveTree->Branch("elementID_exp", &elementID_exp);
+  saveTree->Branch("elementID_closest", &elementID_closest);
   saveTree->Branch("nHits", &nHits, "nHits/I");
   saveTree->Branch("chisq", &chisq, "chisq/D");
-}
-
-void AnaModule::registerDetector(TString name)
-{
-  detectorIDs.insert(p_geomSvc->getDetectorID(name.Data()));
 }
 
 SQHit* AnaModule::findHit(int detID, int eleID)
@@ -124,4 +109,78 @@ SQHit* AnaModule::findHit(int detID, int eleID)
   }
 
   return hit;
+}
+
+int AnaModule::fit_prop(int det_id)
+{
+  std::vector<int> track3 = {19, 21, 22, 51, 52, 53, 54};
+
+  TGraphErrors* gx = new TGraphErrors();
+  TGraphErrors* gy = new TGraphErrors();
+
+  int ndet = track3.size();
+
+  for(int i = 0; i < ndet; i++)
+  {
+    double zz0 = p_geomSvc->getPlanePosition(track3.at(i));
+    double xx0 = tracklet->getExpPositionX(zz0);
+    double yy0 = tracklet->getExpPositionY(zz0);
+    double exx0 = tracklet->getExpPosErrorX(zz0);
+    double eyy0 = tracklet->getExpPosErrorY(zz0);
+
+    // set x points
+    gx->SetPoint(i, xx0, zz0);
+    gx->SetPointError(i, exx0, 0.);
+
+    // set y points
+    gy->SetPoint(i, yy0, zz0);
+    gy->SetPointError(i, eyy0, 0.);
+  }
+
+  // fit functions
+  TF1* fx = new TF1("fx", "[0]* x + [1]", 1900., 2400.);
+  TF1* fy = new TF1("fy", "[0]* x + [1]", 1900., 2400.);
+
+  gx->Fit("fx");
+  gy->Fit("fy");
+
+  double axx = fx->GetParameter(0);
+  double cxx = fx->GetParameter(1);
+
+  double ayy = fy->GetParameter(0);
+  double cyy = fy->GetParameter(1);
+
+  double zz1 = p_geomSvc->getPlanePosition(det_id);
+  double xx1 = axx* zz1 + cxx;
+  double yy1 = ayy* zz1 + cyy;
+
+  if(!p_geomSvc->isInPlane(det_id, xx1, yy1)) continue;
+
+  double pos = p_geomSvc->getCostheta(det_id)*xx1 + p_geomSvc->getSintheta(det_id)*yy1;
+
+  return p_geomSvc->getExpElementID(det_id, pos);
+}
+
+void AnaModule::effi_h4()
+{
+  // only NIM4 events are considered
+  if(!event->get_trigger(SQEvent::NIM4)) continue;
+
+  std::vector<int> hodo3 = {41, 42, 43, 44, 45, 46};
+
+  int nhodo = hodo3.size();
+
+  for(int i = 0; i < nhodo; i++)
+  {
+    int det_id = hodo3.at(i);
+    int exp_id = fit_prop(det_id);
+
+    SQHit* hit = findHit(det_id, exp_id);
+    int close_id = hit == nullptr ? -1 : hit->get_element_id();
+
+    detectorID.push_back(det_id);
+    elementID_exp.push_back(exp_id);
+    elementID_closest.push_back(close_id);
+  }
+
 }

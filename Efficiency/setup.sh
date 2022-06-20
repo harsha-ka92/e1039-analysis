@@ -1,4 +1,6 @@
 DIR_TOP=$(dirname $(readlink -f $BASH_SOURCE))
+E1039_CORE_VERSION=pr.128
+source /e906/app/software/osg/software/e1039/this-e1039.sh
 export LD_LIBRARY_PATH=$DIR_TOP/AnaModule/lib:$LD_LIBRARY_PATH
 
 function rebuild-ana {

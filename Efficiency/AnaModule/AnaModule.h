@@ -30,11 +30,12 @@ public:
   int End(PHCompositeNode* topNode);
 
   void set_output_filename(const TString& n) { saveName = n; }
-  void registerDetector(TString name);
 
 private:
   int GetNodes(PHCompositeNode* topNode);
   void MakeTree();
+  int fit_prop(int det_id);
+  void effi_h4();
 
   SQHit* findHit(int detectorID, int elementID);
   std::set<int> detectorIDs;
@@ -51,11 +52,9 @@ private:
   TTree*  saveTree;
 
   int eventID;
-  int detectorID;
-  int elementID_exp;
-  int elementID_closest;
-  double x_exp;
-  double y_exp;
+  std::vector<int> detectorID;
+  std::vector<int> elementID_exp;
+  std::vector<int> elementID_closest;
   int nHits;
   double chisq;
 };
