@@ -154,33 +154,32 @@ int AnaModule::fit_prop(int det_id, Tracklet* tracklet)
   double xx1 = axx* zz1 + cxx;
   double yy1 = ayy* zz1 + cyy;
 
-  if(!p_geomSvc->isInPlane(det_id, xx1, yy1)) continue;
-
-  double pos = p_geomSvc->getCostheta(det_id)*xx1 + p_geomSvc->getSintheta(det_id)*yy1;
-
-  return p_geomSvc->getExpElementID(det_id, pos);
+  if(p_geomSvc->isInPlane(det_id, xx1, yy1))
+  {
+    double pos = p_geomSvc->getCostheta(det_id)*xx1 + p_geomSvc->getSintheta(det_id)*yy1;
+    return p_geomSvc->getExpElementID(det_id, pos);
+  }
 }
 
 void AnaModule::effi_h4(Tracklet* tracklet)
 {
   // only NIM4 events are considered
-  if(!event->get_trigger(SQEvent::NIM4)) continue;
-
-  std::vector<int> hodo3 = {41, 42, 43, 44, 45, 46};
-
-  int nhodo = hodo3.size();
-
-  for(int i = 0; i < nhodo; i++)
+  if(event->get_trigger(SQEvent::NIM4))
   {
-    int det_id = hodo3.at(i);
-    int exp_id = fit_prop(det_id, tracklet);
+    std::vector<int> hodo3 = {41, 42, 43, 44, 45, 46};
+    int nhodo = hodo3.size();
+    for(int i = 0; i < nhodo; i++)
+    {
+      int det_id = hodo3.at(i);
+      int exp_id = fit_prop(det_id, tracklet);
 
-    SQHit* hit = findHit(det_id, exp_id);
-    int close_id = hit == nullptr ? -1 : hit->get_element_id();
+      SQHit* hit = findHit(det_id, exp_id);
+      int close_id = hit == nullptr ? -1 : hit->get_element_id();
 
-    detectorID.push_back(det_id);
-    elementID_exp.push_back(exp_id);
-    elementID_closest.push_back(close_id);
+      detectorID.push_back(det_id);
+      elementID_exp.push_back(exp_id);
+      elementID_closest.push_back(close_id);
+    }
   }
 
 }
