@@ -13,6 +13,9 @@ int run(const int nEvents = 1)
   const double KMAGSTR = -0.951;
   const bool cosmic = true;
 
+  const char* fn_list_dst="list_dst.txt";
+  const int   n_dst_ana=0;
+
   recoConsts* rc = recoConsts::instance();
   rc->set_DoubleFlag("FMAGSTR", FMAGSTR);
   rc->set_DoubleFlag("KMAGSTR", KMAGSTR);
