@@ -37,8 +37,8 @@ public:
 private:
   int GetNodes(PHCompositeNode* topNode);
   void MakeTree();
-  int fit_prop(int det_id);
-  void effi_h4();
+  int fit_prop(int det_id, Tracklet* tracklet);
+  void effi_h4(Tracklet* tracklet);
 
   SQHit* findHit(int detectorID, int elementID);
   std::set<int> detectorIDs;
