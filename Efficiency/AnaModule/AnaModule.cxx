@@ -121,7 +121,7 @@ int AnaModule::fit_prop(int det_id, Tracklet* tracklet)
   int ndet = track3.size();
 
   std::cout << "***     ***" << std::endl;
-  std::cout << "vec. size : " << ndet << std::endl;
+  std::cout << "det. size : " << ndet << std::endl;
   std::cout << "***     ***" << std::endl;
 
   for(int i = 0; i < ndet; i++)
@@ -161,7 +161,7 @@ int AnaModule::fit_prop(int det_id, Tracklet* tracklet)
   double yy1 = ayy* zz1 + cyy;
 
   std::cout << "***     ***" << std::endl;
-  std::cout << "hodo : " << det_id << "x : " << xx1 << " y :" << yy1 << " z : " << zz1 << std::endl;
+  std::cout << "hodo : " << det_id << " x : " << xx1 << " y :" << yy1 << " z : " << zz1 << std::endl;
   std::cout << "***     ***" << std::endl;
 
   if(p_geomSvc->isInPlane(det_id, xx1, yy1))
