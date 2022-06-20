@@ -45,7 +45,7 @@ int AnaModule::process_event(PHCompositeNode* topNode)
     if(nHits < 9) continue;
     if(chisq > 20.) continue;
 
-    effi_h4();
+    effi_h4(tracklet);
 
     saveTree->Fill();
 
@@ -111,7 +111,7 @@ SQHit* AnaModule::findHit(int detID, int eleID)
   return hit;
 }
 
-int AnaModule::fit_prop(int det_id)
+int AnaModule::fit_prop(int det_id, Tracklet* tracklet)
 {
   std::vector<int> track3 = {19, 21, 22, 51, 52, 53, 54};
 
@@ -161,7 +161,7 @@ int AnaModule::fit_prop(int det_id)
   return p_geomSvc->getExpElementID(det_id, pos);
 }
 
-void AnaModule::effi_h4()
+void AnaModule::effi_h4(Tracklet* tracklet)
 {
   // only NIM4 events are considered
   if(!event->get_trigger(SQEvent::NIM4)) continue;
@@ -173,7 +173,7 @@ void AnaModule::effi_h4()
   for(int i = 0; i < nhodo; i++)
   {
     int det_id = hodo3.at(i);
-    int exp_id = fit_prop(det_id);
+    int exp_id = fit_prop(det_id, tracklet);
 
     SQHit* hit = findHit(det_id, exp_id);
     int close_id = hit == nullptr ? -1 : hit->get_element_id();
