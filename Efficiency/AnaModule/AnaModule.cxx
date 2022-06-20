@@ -133,12 +133,12 @@ int AnaModule::fit_prop(int det_id, Tracklet* tracklet)
     double eyy0 = tracklet->getExpPosErrorY(zz0);
 
     // set x points
-    gx->SetPoint(i, xx0, zz0);
-    gx->SetPointError(i, exx0, 0.);
+    gx->SetPoint(i, zz0, xx0);
+    gx->SetPointError(i, 0., exx0);
 
     // set y points
-    gy->SetPoint(i, yy0, zz0);
-    gy->SetPointError(i, eyy0, 0.);
+    gy->SetPoint(i, zz0, yy0);
+    gy->SetPointError(i, 0., eyy0);
 
     std::cout << "det : " << track3.at(i) << " x : " << xx0 << " y : " << yy0 << " z : " << zz0 << " ex :" << exx0 << " ey : " << eyy0 << std::endl;
   }
