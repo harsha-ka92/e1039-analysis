@@ -176,7 +176,7 @@ void AnaModule::effi_h4(Tracklet* tracklet)
   // only NIM4 events are considered
   if(event->get_trigger(SQEvent::NIM4))
   {
-    std::vector<int> hodo3 = {41, 42, 43, 44, 45, 46};
+    std::vector<int> hodo4 = {41, 42, 43, 44, 45, 46};
     int nhodo = hodo3.size();
     for(int i = 0; i < nhodo; i++)
     {
