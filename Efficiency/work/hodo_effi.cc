@@ -13,6 +13,8 @@ base class for hodoscope efficiency
 #include <map>
 #include <vector>
 #include <iostream>
+#include <string>
+#include <fstream>
 
 
 #include "hodo_effi.h"
@@ -726,29 +728,58 @@ void hodo_effi::ana()
 void hodo_effi::print()
 {
     //gROOT->SetStyle("ATLAS");
-    TGraphAsymmErrors* G;
-    for(unsigned int i = 0; i < det_names.size(); i++)
+    //Get the Plane ID and PMT number 
+    TGraphAsymmErrors* PMT_eff = new TGraphAsymmErrors();
+    char x;
+    int y;
+    char str[80];
+    cout << "Enter detector plane (Available IDs: ):\n";
+    cout << "Enter the PMT number:\n";
+    cin >> y;
+    cin >> x;
+    
+    // get the voltages from txt file and store in an array (are vectors supported in TGraphAsymmErrors?).
+    
+    double hv_step[5]; 
+    short entry=0; 
+    double value; 
+    ifstream myfile ("RunVoltages.txt"); 
+        if (myfile.is_open()) 
+        {
+            while (! myfile.eof() ) 
+            {
+                getline (myfile,value); 
+                hv_step[entry] = value;
+                entry++;
+            }
+            myfile.close(); 
+        }
+        else cout << "can't open the file"; 
+    
+    //Plot efficeincies of the requested paddle
+    for (unsigned int runs=0;runs<5; runs++)
     {
-        can = new TCanvas(effi.at(i)->GetName(), "", 1000, 500);
-        can->Divide(2);
-        can->cd(1);
         
-        effi.at(i)->SetMarkerColor(2);
-        effi.at(i)->SetStatisticOption(TEfficiency::kBBayesian);
-        effi.at(i)->SetConfidenceLevel(0.68);
-        
-        effi.at(i)->Draw("APE1");
-        can->Update();
-        
-        G = effi.at(i)->GetPaintedGraph();
-        G->SetMinimum(0.0);
-        G->SetMaximum(1.05);
-        can->Update();
-        
-        can->cd(2);
-        hdiff.at(i)->SetFillColor(kAzure+10);
-        hdiff.at(i)->Draw();
-        
-        can->Draw();
+        for(unsigned int i = 0; i < det_names.size(); i++)
+         {  
+            if (effi.at(i)->GetName()==x)
+            {
+             can = new TCanvas("paddle efficiency" , "", 1000, 500);
+             pmt_eff->SetPoint(runs, hvStep[runs], eff.at(i)->GetEfficiency(y-1));
+			 pmt_eff->SetPointError(runs, 0., 0., eff->GetEfficiencyErrorUp(y-1), eff->GetEfficiencyErrorLow(y-1));
+			
+			
+		    TCanvas* c1 = new TCanvas("c1", "", 1000, 500);		
+   		    c1->SetFillColor(42);
+   		    c1->SetGrid();
+   		    c1->GetFrame()->SetFillColor(21);
+   		    c1->GetFrame()->SetBorderSize(12);
+
+		    pmt_eff->SetTitle("Efficiency variation with voltage");
+   		    pmt_eff->SetMarkerColor(4);
+   		    pmt_eff->SetMarkerStyle(21);
+   		    pmt_eff->Draw("SAME");
+            }
+        }
     }
 }
