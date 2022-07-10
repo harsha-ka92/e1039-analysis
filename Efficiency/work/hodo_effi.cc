@@ -729,7 +729,7 @@ void hodo_effi::print()
 {
     //gROOT->SetStyle("ATLAS");
     //Get the Plane ID and PMT number 
-    TGraphAsymmErrors* PMT_eff = new TGraphAsymmErrors();
+    TGraphAsymmErrors* pmt_eff = new TGraphAsymmErrors();
     char x;
     int y;
     char str[80];
