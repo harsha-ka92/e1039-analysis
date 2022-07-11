@@ -21,9 +21,9 @@ base class for hodoscope efficiency
 
 using namespace std;
 
-hodo_effi::hodo_effi()
+hodo_effi::hodo_effi(TString file_name)
 {
-    file = TFile::Open("ana.root", "READ");
+    file = TFile::Open(file_name, "READ");
     tree = (TTree*)file->Get("save");
     events = tree->GetEntries();
     
@@ -740,7 +740,7 @@ void hodo_effi::print()
     
     // get the voltages from txt file and store in an array (are vectors supported in TGraphAsymmErrors?).
     
-    double hv_step[5]; 
+    double hvStep[5]; 
     short entry=0; 
     double value; 
     ifstream myfile ("RunVoltages.txt"); 
@@ -749,7 +749,7 @@ void hodo_effi::print()
             while (! myfile.eof() ) 
             {
                 getline (myfile,value); 
-                hv_step[entry] = value;
+                hvStep[entry] = value;
                 entry++;
             }
             myfile.close(); 
@@ -766,7 +766,7 @@ void hodo_effi::print()
             {
              can = new TCanvas("paddle efficiency" , "", 1000, 500);
              pmt_eff->SetPoint(runs, hvStep[runs], eff.at(i)->GetEfficiency(y-1));
-			 pmt_eff->SetPointError(runs, 0., 0., eff->GetEfficiencyErrorUp(y-1), eff->GetEfficiencyErrorLow(y-1));
+	     pmt_eff->SetPointError(runs, 0., 0., eff->GetEfficiencyErrorUp(y-1), eff->GetEfficiencyErrorLow(y-1));
 			
 			
 		    TCanvas* c1 = new TCanvas("c1", "", 1000, 500);		
