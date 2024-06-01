@@ -1,8 +1,12 @@
 #include <iomanip>
+#include <fstream>
 #include <TSystem.h>
 #include <TFile.h>
 #include <TTree.h>
 #include <TH1D.h>
+#include <TH2D.h>
+#include <TFitResult.h>
+#include <TStyle.h>
 #include <TCanvas.h>
 #include <interface_main/SQRun.h>
 #include <interface_main/SQEvent.h>
@@ -17,7 +21,7 @@
 using namespace std;
 
 /// List of detectors that you want to analyze
-const vector<string> AnaHodoHit::m_list_det_name = { "H1T", "H1B", "H2T", "H2B" };
+const vector<string> AnaHodoHit::m_list_det_name = { "H1T", "H1B", "H1L", "H1R", "H2T", "H2B", "H2L", "H2R", "H3T", "H3B", "H4Y1L", "H4Y1R",  "H4Y2L", "H4Y2R", "H4T", "H4B"};
 
 AnaHodoHit::AnaHodoHit(const std::string& name)
   : SubsysReco(name)
@@ -38,13 +42,13 @@ int AnaHodoHit::InitRun(PHCompositeNode* topNode)
   /// Input
   ///
   m_evt     = findNode::getClass<SQEvent    >(topNode, "SQEvent");
-  m_hit_vec = findNode::getClass<SQHitVector>(topNode, "SQTriggerHitVector");
+  m_hit_vec = findNode::getClass<SQHitVector>(topNode, "SQHitVector");
   if (!m_evt || !m_hit_vec) return Fun4AllReturnCodes::ABORTEVENT;
 
   ///
   /// Output
   ///
-  gSystem->mkdir("result", true);
+  gSystem->mkdir("TDCtime", true);
 
   m_file = new TFile("result/output.root", "RECREATE");
   m_tree = new TTree("tree", "Created by AnaHodoHit");
@@ -52,9 +56,11 @@ int AnaHodoHit::InitRun(PHCompositeNode* topNode)
   m_tree->Branch("det"     , &b_det     ,      "det/I");
   m_tree->Branch("ele"     , &b_ele     ,      "ele/I");
   m_tree->Branch("time"    , &b_time    ,     "time/D");
-
+  
+  int nbins; double bin_max; double bin_min; const double DT=12.0/9.0;
   ostringstream oss;
   GeomSvc* geom = GeomSvc::instance();
+
   for (unsigned int i_det = 0; i_det < m_list_det_name.size(); i_det++) {
     string name = m_list_det_name[i_det];
     int id = geom->getDetectorID(name);
@@ -66,12 +72,21 @@ int AnaHodoHit::InitRun(PHCompositeNode* topNode)
     int n_ele = geom->getPlaneNElements(id);
     cout << "  " << setw(6) << name << " = " << id << endl;
 
+    std::cout<<"index 2 is"<< name[1] <<std::endl;
+
+    if (name[1]=='1' || name[1]=='2'){bin_min = 616.5*DT; bin_max = 696.5*DT; nbins = 80;}
+    /*else if (name[1]=='2'){bin_min = 650.*DT; bin_max = 673.*DT; nbins = 23;}
+    else if (name[1]=='3'){bin_min = 706.*DT; bin_max = 729.*DT; nbins = 23;}
+    else if (name[1]=='4' && name[2]!='Y'){bin_min = 703.*DT; bin_max = 722.*DT; nbins = 19;}
+    else if (name[1]=='4' && name[2]=='Y'){bin_min = 706.*DT; bin_max = 737.*DT; nbins = 31;}*/
+    else {bin_min =681.5*DT; bin_max=771.5*DT; nbins = 90;}
+    
     oss.str("");
-    oss << "h1_ele_" << name;
-    m_h1_ele[i_det] = new TH1D(oss.str().c_str(), "", n_ele, 0.5, n_ele+0.5);
+    oss << "TDC_time_of_hits_" << name;
+    m_h1_tdc[i_det] = new TH1D(oss.str().c_str(), "", nbins, bin_min, bin_max);
     oss.str("");
-    oss << name << ";Element ID;Hit count";
-    m_h1_ele[i_det]->SetTitle(oss.str().c_str());
+    oss << name << ";TDC time(ns);Hit count";
+    m_h1_tdc[i_det]->SetTitle(oss.str().c_str());
 
     oss.str("");
     oss << "h1_nhit_" << name;
@@ -79,6 +94,14 @@ int AnaHodoHit::InitRun(PHCompositeNode* topNode)
     oss.str("");
     oss << name << ";N of hits/plane/event;Hit count";
     m_h1_nhit[i_det]->SetTitle(oss.str().c_str());
+
+    oss.str("");
+    oss << "Padle_by_padle_tdc_" << name;
+    m_h2_tdc[i_det] = new TH2D(oss.str().c_str(), "", n_ele, 0.5, n_ele+0.5, nbins, bin_min, bin_max);
+    oss.str("");
+    oss << name << ";Element ID;TDC time;Hit count";
+    m_h2_tdc[i_det]->SetTitle(oss.str().c_str());
+
   }
 
   return Fun4AllReturnCodes::EVENT_OK;
@@ -90,24 +113,12 @@ int AnaHodoHit::process_event(PHCompositeNode* topNode)
   //int event_id = m_evt->get_event_id();
 
   ///
-  /// Event selection
+  ///Event selection: select events from NIM2 for now
   ///
-  if (! m_evt->get_trigger(SQEvent::NIM2)) {
-    return Fun4AllReturnCodes::EVENT_OK;
-  }
-
-  /// Example of event selection using H3T and H3B hodo hits
-  static int did_h3t = 0;
-  static int did_h3b = 0;
-  if (did_h3t == 0) { // Resolve IDs only once.
-    GeomSvc* geom = GeomSvc::instance();
-    did_h3t = geom->getDetectorID("H3T");
-    did_h3b = geom->getDetectorID("H3B");
-    cout << "H3T = " << did_h3t << ", H3B = " << did_h3b << endl;
-  }
-  shared_ptr<SQHitVector> hv_h3t(UtilSQHit::FindHits(m_hit_vec, did_h3t));
-  shared_ptr<SQHitVector> hv_h3b(UtilSQHit::FindHits(m_hit_vec, did_h3b));
-  if (hv_h3t->size() + hv_h3b->size() != 1) return Fun4AllReturnCodes::EVENT_OK;
+  ///
+  ///if (! m_evt->get_trigger(SQEvent::NIM2)) {
+  ///  return Fun4AllReturnCodes::EVENT_OK;
+  ///}
 
   ///
   /// Get & fill the hit info
@@ -121,7 +132,8 @@ int AnaHodoHit::process_event(PHCompositeNode* topNode)
       b_time = (*it)->get_tdc_time  ();
       m_tree->Fill();
 
-      m_h1_ele[i_det]->Fill(b_ele);
+      m_h1_tdc[i_det]->Fill(b_time);
+      m_h2_tdc[i_det]->Fill(b_ele,b_time);
     }
     m_h1_nhit[i_det]->Fill(hv->size());
   }
@@ -131,18 +143,40 @@ int AnaHodoHit::process_event(PHCompositeNode* topNode)
 
 int AnaHodoHit::End(PHCompositeNode* topNode)
 {
+  std::ofstream outfile;
+  outfile.open("test.txt", std::ios_base::app);
+
+  //gStyle->SetOptStat(0);
+  gStyle->SetOptFit(0111);
   ostringstream oss;
   TCanvas* c1 = new TCanvas("c1", "");
   c1->SetGrid();
   for (unsigned int i_det = 0; i_det < m_list_det_id.size(); i_det++) {
-    m_h1_ele[i_det]->Draw();
+    
+    m_h1_tdc[i_det]->Draw();
+    
+    int max_bin = m_h1_tdc[i_det]->GetMaximumBin();
+    double max_bin_x = m_h1_tdc[i_det]->GetXaxis()->GetBinCenter(max_bin);
+    
+    TFitResultPtr r  = m_h1_tdc[i_det]->Fit("gaus","","", max_bin_x -10, max_bin_x+10);
+    c1->Update();
+    
     oss.str("");
-    oss << "result/" << m_h1_ele[i_det]->GetName() << ".png";
+    oss<< r->Parameter(1)<<","<<r->ParError(1)<<"/"<<r->Parameter(2)<<","<<r->ParError(2) <<"\n";
+    r->Write("outfile");
+
+    oss.str("");
+    oss << "TDCtime/" << m_h1_tdc[i_det]->GetName() << ".png";
     c1->SaveAs(oss.str().c_str());
 
     m_h1_nhit[i_det]->Draw();
     oss.str("");
-    oss << "result/" << m_h1_nhit[i_det]->GetName() << ".png";
+    oss << "TDCtime/" << m_h1_nhit[i_det]->GetName() << ".png";
+    c1->SaveAs(oss.str().c_str());
+
+    m_h2_tdc[i_det]->Draw("colz");
+    oss.str("");
+    oss << "TDCtime/" << m_h2_tdc[i_det]->GetName() << ".png";
     c1->SaveAs(oss.str().c_str());
   }
   delete c1;

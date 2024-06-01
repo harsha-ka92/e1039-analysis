@@ -7,6 +7,7 @@ class TH1;
 class TH2;
 class SQEvent;
 class SQHitVector;
+class TFitResult;
 
 /// An example class to analyze hodoscope hits in E1039 DST file.
 class AnaHodoHit: public SubsysReco {
@@ -22,8 +23,9 @@ class AnaHodoHit: public SubsysReco {
   int    b_det;
   int    b_ele;
   double b_time;
-  TH1*   m_h1_ele[99];
+  TH1*   m_h1_tdc[99];
   TH1*   m_h1_nhit[99];
+  TH2*   m_h2_tdc[99];
 
  public:
   AnaHodoHit(const std::string& name="AnaHodoHit");
