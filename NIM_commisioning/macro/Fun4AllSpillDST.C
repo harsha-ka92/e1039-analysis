@@ -1,7 +1,7 @@
 R__LOAD_LIBRARY(AnaRealDst)
 
 /// Fun4All macro to analyze spill-by-spill DST files of the given run.
-int Fun4AllSpillDST(const int run=5557, const int nevent=0)
+int Fun4AllSpillDST(const int run=5598, const int nevent=0)
 {
   Fun4AllServer* se = Fun4AllServer::instance();
   //se->setRun(run);

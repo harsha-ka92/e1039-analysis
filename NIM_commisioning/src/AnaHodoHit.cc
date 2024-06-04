@@ -3,6 +3,7 @@
 #include <TSystem.h>
 #include <TFile.h>
 #include <TTree.h>
+#include <TF1.h>
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TFitResult.h>
@@ -49,6 +50,8 @@ int AnaHodoHit::InitRun(PHCompositeNode* topNode)
   /// Output
   ///
   gSystem->mkdir("TDCtime", true);
+  gSystem->mkdir("PBP", true);
+  gSystem->mkdir("PBP_dist",true);
 
   m_file = new TFile("result/output.root", "RECREATE");
   m_tree = new TTree("tree", "Created by AnaHodoHit");
@@ -98,14 +101,21 @@ int AnaHodoHit::InitRun(PHCompositeNode* topNode)
     m_h1_nhit[i_det]->SetTitle(oss.str().c_str());
 
     oss.str("");
-    oss << "Padle_by_padle_tdc_" << name;
+    oss << "PBP_tdc_" << name;
     m_h2_tdc[i_det] = new TH2D(oss.str().c_str(), "", n_ele, 0.5, n_ele+0.5, nbins, bin_min, bin_max);
     oss.str("");
     oss << name <<":"<<runID << ";Element ID;TDC time;Hit count";
     m_h2_tdc[i_det]->SetTitle(oss.str().c_str());
-
+    
   }
-
+   
+   oss.str("");
+   oss << "NIM3";
+   h_trig = new TH1D(oss.str().c_str(), "", 250, 616.5*DT, 1166.5*DT);
+   oss.str("");
+   oss << "NIM3 Hits in:"<<runID << ";tdc time ;Hit count";
+   h_trig->SetTitle(oss.str().c_str());
+  
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -118,7 +128,7 @@ int AnaHodoHit::process_event(PHCompositeNode* topNode)
   ///Event selection: select events from NIM2 for now
   ///
   ///
- if (! m_evt->get_trigger(SQEvent::NIM2)) {
+ if (! m_evt->get_trigger(SQEvent::NIM3)) {
    return Fun4AllReturnCodes::EVENT_OK;
  }
 
@@ -136,18 +146,24 @@ int AnaHodoHit::process_event(PHCompositeNode* topNode)
 
       m_h1_tdc[i_det]->Fill(b_time);
       m_h2_tdc[i_det]->Fill(b_ele,b_time);
-      //m_h1_tdc[i_det]=m_h2_tdc[i_det]->ProjectionY();
+      //m_h1_pbp[i_det]=m_h2_tdc[i_det]->FitSlicesY("gaus");
     }
     m_h1_nhit[i_det]->Fill(hv->size());
   }
-
+  shared_ptr<SQHitVector> tdcNIM(UtilSQHit::FindHits(m_hit_vec,"AfterInhNIM"));
+ 
+  for (SQHitVector::ConstIter it = tdcNIM->begin(); it != tdcNIM->end(); it++) {
+      b_ele  = (*it)->get_element_id();
+      if (b_ele==4){b_time = (*it)->get_tdc_time  ();
+      h_trig->Fill(b_time);}
+  }
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
 int AnaHodoHit::End(PHCompositeNode* topNode)
 {
-  //std::ofstream outfile;
-  //outfile.open("test.txt", std::ios_base::app);
+  std::ofstream outfile;
+  outfile.open("PBP.txt");
 
   //gStyle->SetOptStat(0);
   gStyle->SetOptFit(0111);
@@ -164,26 +180,64 @@ int AnaHodoHit::End(PHCompositeNode* topNode)
     m_h1_tdc[i_det]->Fit("gaus","","", max_bin_x -10, max_bin_x+10);
     c1->Update();
     
-   /*oss.str("");
-    oss<< r->Parameter(1)<<","<<r->ParError(1)<<"/"<<r->Parameter(2)<<","<<r->ParError(2) <<"\n";
-    r->Write("outfile");*/
-
     oss.str("");
     oss << "TDCtime/" << m_h1_tdc[i_det]->GetName() << ".png";
     c1->SaveAs(oss.str().c_str());
-
+    
     m_h1_nhit[i_det]->Draw();
     oss.str("");
     oss << "TDCtime/" << m_h1_nhit[i_det]->GetName() << ".png";
     c1->SaveAs(oss.str().c_str());
-
+    
     m_h2_tdc[i_det]->Draw("colz");
+    
     oss.str("");
-    oss << "TDCtime/" << m_h2_tdc[i_det]->GetName() << ".png";
+    oss << "TDCtime/" << m_h2_tdc[i_det]->GetName()<< ".png";
     c1->SaveAs(oss.str().c_str());
-  }
-  delete c1;
+    
+    oss<<"_1";
+    
+   /* m_h2_tdc[i_det]->FitSlicesY();    
+    TH1D *mean_hist = (TH1D*)gDirectory->Get(oss.str().c_str());
+    mean_hist->Draw();
+    */
+    oss.str("");
+    oss << "PBP/" << m_h2_tdc[i_det]->GetName() << ".png";
+    c1->SaveAs(oss.str().c_str());    
+    
+    for (int i=1; i <= m_h2_tdc[i_det]->GetXaxis()->GetNbins(); i++){
+    	oss.str("");
+	oss<<"paddle_"<<i;
+	TH1D *paddle_hist = m_h2_tdc[i_det]->ProjectionY(oss.str().c_str(),i,i,"");
+	oss.str("");
+	oss<< m_h2_tdc[i_det]->GetName();
+	paddle_hist->SetTitle(oss.str().c_str());
+	paddle_hist->Draw();
+	
+	int max_pad = paddle_hist->GetMaximumBin();
+        double max_pad_x = paddle_hist->GetXaxis()->GetBinCenter(max_pad);
+	
+	auto fb = new TF1("fb","gaus(0)",max_pad_x-10,max_pad_x+10);
+        paddle_hist->Fit("fb","","", max_pad_x -10, max_pad_x+10);
+        double mean = fb->GetParameter(1);
+	double sigma = fb->GetParameter(2);
+	c1->Update();
+	outfile << m_h2_tdc[i_det]->GetName()<<"_"<<i<<","<<mean<<","<<sigma<<std::endl;
 
+	oss.str("");
+	oss<<"PBP_dist/" << m_h2_tdc[i_det]->GetName() << "_bin"<<i<<".png";
+	c1->SaveAs(oss.str().c_str());
+    }
+  }
+  
+  h_trig->Draw();
+  h_trig->GetXaxis()->SetRangeUser(950, 1150);
+  oss.str("");
+  oss<<"tdc_all" << h_trig->GetName() << "_NIM3.png";
+  c1->SaveAs(oss.str().c_str());
+
+  delete c1;
+  
   m_file->cd();
   m_file->Write();
   m_file->Close();

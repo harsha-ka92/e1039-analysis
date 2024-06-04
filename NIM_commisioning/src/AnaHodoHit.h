@@ -26,8 +26,10 @@ class AnaHodoHit: public SubsysReco {
   TH1*   m_h1_tdc[99];
   TH1*   m_h1_nhit[99];
   TH2*   m_h2_tdc[99];
+  TH1*   m_h1_pbp[99];
+  TH1*   h_trig; 
 
- public:
+public:
   AnaHodoHit(const std::string& name="AnaHodoHit");
   virtual ~AnaHodoHit() {;}
   int Init(PHCompositeNode *topNode);
